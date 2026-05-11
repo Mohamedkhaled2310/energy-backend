@@ -27,7 +27,7 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
   'https://fims-mobile-view.vercel.app',
-  'https://energy-4d6ka3jni-m22080569-9746s-projects.vercel.app'
+  'https://energy-jade.vercel.app'
 ];
 
 app.use(cors({
