@@ -25,7 +25,9 @@ const allowedOrigins = [
   'http://localhost:8081',
   'http://localhost:8082',
   'http://localhost:3000',
-  'http://localhost:3001'
+  'http://localhost:3001',
+  'https://fims-mobile-view.vercel.app',
+  'https://energy-4d6ka3jni-m22080569-9746s-projects.vercel.app'
 ];
 
 app.use(cors({

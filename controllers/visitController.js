@@ -7,7 +7,8 @@ import { saveBase64Image } from '../utils/fileUtils.js';
 // @route   GET /api/visits
 export const getVisits = async (req, res, next) => {
   try {
-    const { station, type, severity, q } = req.query;
+    const { station, type, severity, classification, q, page = 1, limit = 10 } = req.query;
+    const skip = (page - 1) * limit;
     
     let query = {};
     if (station) query.station = station;
@@ -19,13 +20,42 @@ export const getVisits = async (req, res, next) => {
         { inspectors: { $regex: q, $options: 'i' } }
       ];
     }
-    
-    if (severity && severity !== 'all') {
-      query['notes.severity'] = severity;
+
+    // Handle classification (mapped to safetyScore ranges)
+    if (classification && classification !== 'all') {
+      if (classification === 'ممتاز') query.safetyScore = { $gte: 90 };
+      else if (classification === 'جيد جداً') query.safetyScore = { $gte: 80, $lt: 90 };
+      else if (classification === 'جيد') query.safetyScore = { $gte: 70, $lt: 80 };
+      else if (classification === 'يحتاج تحسين') query.safetyScore = { $gte: 50, $lt: 70 };
+      else if (classification === 'ضعيف') query.safetyScore = { $lt: 50 };
     }
     
-    const visits = await Visit.find(query).sort({ date: -1 });
-    res.json(visits);
+    // Handle severity (map English keys to Arabic labels used in DB)
+    if (severity && severity !== 'all') {
+      const severityMap = {
+        violation: 'مخالفة',
+        imminent: 'حادث وشيك',
+        incident: 'حادث',
+        unsafeAct: 'تصرف غير آمن',
+        injury: 'الإصابة',
+        unsafeCond: 'الحالة غير الآمنة'
+      };
+      const dbSeverity = severityMap[severity] || severity;
+      query['notes.severity'] = dbSeverity;
+    }
+    
+    const total = await Visit.countDocuments(query);
+    const visits = await Visit.find(query)
+      .sort({ date: -1 })
+      .skip(Number(skip))
+      .limit(Number(limit));
+
+    res.json({
+      visits,
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / limit)
+    });
   } catch (error) {
     next(error);
   }
@@ -39,7 +69,18 @@ export const getVisit = async (req, res, next) => {
     if (!visit) {
       return res.status(404).json({ success: false, message: 'Visit not found' });
     }
-    res.json(visit);
+
+    // Find the previous visit to this station to calculate change
+    const prevVisit = await Visit.findOne({
+      station: visit.station._id || visit.station,
+      _id: { $ne: visit._id },
+      date: { $lte: visit.date }
+    }).sort({ date: -1 });
+
+    const visitObj = visit.toObject();
+    visitObj.prevVisitScore = prevVisit ? prevVisit.safetyScore : null;
+
+    res.json(visitObj);
   } catch (error) {
     next(error);
   }
@@ -91,13 +132,8 @@ export const createVisit = async (req, res, next) => {
       safetyScore
     });
     
-    // Update station's cumulative safety score
-    const allVisits = await Visit.find({ station: targetStationId }).select('safetyScore');
-    const newStationScore = Math.round(
-      allVisits.reduce((acc, v) => acc + v.safetyScore, 0) / allVisits.length
-    );
-    
-    dbStation.safetyScore = newStationScore;
+    // Update station's safety score to the latest visit score
+    dbStation.safetyScore = safetyScore;
     dbStation.visitCount += 1;
     await dbStation.save();
     
