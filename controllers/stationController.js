@@ -54,7 +54,7 @@ export const getStation = async (req, res, next) => {
   try {
     const station = await Station.findById(req.params.id);
     if (!station) {
-      return res.status(404).json({ success: false, message: 'Station not found' });
+      return res.status(404).json({ success: false, message: 'المحطة غير موجودة' });
     }
     
     // Get recent visits for this station
@@ -111,7 +111,7 @@ export const deleteStation = async (req, res, next) => {
     // Optional: Delete associated visits
     // await Visit.deleteMany({ station: req.params.id });
     
-    res.json({ success: true, message: 'Station removed' });
+    res.json({ success: true, message: 'تم حذف المحطة بنجاح' });
   } catch (error) {
     next(error);
   }
@@ -122,7 +122,7 @@ export const deleteStation = async (req, res, next) => {
 export const bulkImportStations = async (req, res, next) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ success: false, message: 'Please upload an excel file' });
+      return res.status(400).json({ success: false, message: 'يرجى رفع ملف إكسل' });
     }
     
     const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
@@ -144,7 +144,7 @@ export const bulkImportStations = async (req, res, next) => {
     
     res.status(201).json({
       success: true,
-      message: `Imported ${result.length} stations successfully`,
+      message: `تم استيراد ${result.length} محطة بنجاح`,
       count: result.length
     });
   } catch (error) {
@@ -152,7 +152,7 @@ export const bulkImportStations = async (req, res, next) => {
     if (error.code === 11000) {
       return res.status(201).json({
         success: true,
-        message: `Import completed with some duplicates skipped`,
+        message: `تم الاستيراد مع تخطي بعض السجلات المكررة`,
         count: error.insertedDocs?.length || 0
       });
     }

@@ -26,7 +26,7 @@ function checkFileType(file, cb) {
   if (extname && mimetype) {
     return cb(null, true);
   } else {
-    cb(new Error('Images only!'));
+    cb(new Error('الصور فقط!'));
   }
 }
 
@@ -46,7 +46,7 @@ export const uploadExcel = multer({
     if (extname) {
       return cb(null, true);
     }
-    cb(new Error('Excel or CSV files only!'));
+    cb(new Error('ملفات إكسل أو CSV فقط!'));
   }
 });
 
@@ -54,7 +54,7 @@ export const uploadExcel = multer({
 // @route   POST /api/upload/image
 export const uploadImage = (req, res) => {
   if (!req.file) {
-    return res.status(400).json({ success: false, message: 'No file uploaded' });
+    return res.status(400).json({ success: false, message: 'لم يتم رفع أي ملف' });
   }
   // Return path relative to server root, frontend will prepend server URL
   res.status(200).json({

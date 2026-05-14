@@ -67,7 +67,7 @@ export const getVisit = async (req, res, next) => {
   try {
     const visit = await Visit.findById(req.params.id).populate('station', 'name code region');
     if (!visit) {
-      return res.status(404).json({ success: false, message: 'Visit not found' });
+      return res.status(404).json({ success: false, message: 'الزيارة غير موجودة' });
     }
 
     // Find the previous visit to this station to calculate change
@@ -94,13 +94,13 @@ export const createVisit = async (req, res, next) => {
     const targetStationId = station || req.body.stationId;
     
     if (!targetStationId) {
-      return res.status(400).json({ success: false, message: 'Station ID is required' });
+      return res.status(400).json({ success: false, message: 'معرف المحطة مطلوب' });
     }
 
     // Validate station exists
     const dbStation = await Station.findById(targetStationId);
     if (!dbStation) {
-      return res.status(404).json({ success: false, message: 'Station not found' });
+      return res.status(404).json({ success: false, message: 'المحطة غير موجودة' });
     }
     
     // Process notes: Save Base64 images to disk if present
